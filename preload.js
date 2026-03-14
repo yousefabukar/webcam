@@ -1,5 +1,5 @@
-window.addEventListener('DOMContentLoaded', () => {
-  const { versions } = process
-  document.getElementById('electron-version').innerText = versions.electron
-  document.getElementById('node-version').innerText = versions.node
+const { contextBridge, ipcRenderer } = require('electron')
+
+contextBridge.exposeInMainWorld('electronAPI', {
+  saveImage: (dataUrl) => ipcRenderer.invoke('save-image', dataUrl)
 })

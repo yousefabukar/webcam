@@ -4,10 +4,91 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Webcam</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      gap: 16px;
+    }
+    h1 { font-size: 1.4rem; }
+    video {
+      width: 100%;
+      max-width: 720px;
+      border-radius: 8px;
+      background: #000;
+    }
+    canvas { display: none; }
+    #status { font-size: 0.85rem; color: #aaa; min-height: 1.2em; }
+    #status.success { color: #4caf50; }
+    #status.error { color: #f44336; }
+    button {
+      padding: 10px 28px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #2196f3;
+      color: #fff;
+    }
+    button:hover { background: #1976d2; }
+    button:disabled { background: #555; cursor: not-allowed; }
+  </style>
 </head>
 <body>
   <h1>Webcam</h1>
-  <p>Electron v<span id="electron-version"></span></p>
-  <p>Node v<span id="node-version"></span></p>
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas"></canvas>
+  <button id="capture" disabled>Take Photo</button>
+  <p id="status"></p>
+
+  <script>
+    const video = document.getElementById('video')
+    const canvas = document.getElementById('canvas')
+    const captureBtn = document.getElementById('capture')
+    const status = document.getElementById('status')
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+        video.srcObject = stream
+        captureBtn.disabled = false
+        status.textContent = 'Camera ready.'
+        status.className = ''
+      } catch (err) {
+        status.textContent = `Camera error: ${err.message}`
+        status.className = 'error'
+      }
+    }
+
+    captureBtn.addEventListener('click', async () => {
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      canvas.getContext('2d').drawImage(video, 0, 0)
+
+      const dataUrl = canvas.toDataURL('image/png')
+      captureBtn.disabled = true
+      status.textContent = 'Saving…'
+      status.className = ''
+
+      const result = await window.electronAPI.saveImage(dataUrl)
+      captureBtn.disabled = false
+
+      if (result.success) {
+        status.textContent = `Saved to ${result.filePath}`
+        status.className = 'success'
+      } else {
+        status.textContent = 'Save cancelled.'
+        status.className = ''
+      }
+    })
+
+    startCamera()
+  </script>
 </body>
 </html>
