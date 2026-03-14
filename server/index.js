@@ -17,18 +17,17 @@ app.post('/pixels', upload.single('image'), async (req, res) => {
 
   try {
     const { data, info } = await sharp(req.file.buffer)
-      .removeAlpha()       // drop alpha → ensures 3 channels (RGB only)
-      .raw()               // raw pixel output, no encoding
+      .removeAlpha()     
+      .raw()              
       .toBuffer({ resolveWithObject: true })
 
-    // data is a Buffer of interleaved RGB bytes — one Uint8 per channel
     const pixels = Array.from(new Uint8Array(data))
 
     res.json({
       width: info.width,
       height: info.height,
       channels: info.channels,
-      pixels                // flat [R,G,B, R,G,B, ...] — length = width * height * 3
+      pixels
     })
   } catch (err) {
     res.status(422).json({ error: `Failed to process image: ${err.message}` })
