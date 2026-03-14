@@ -9,6 +9,7 @@ function createWindow() {
     minHeight: 480,
     frame: false,
     backgroundColor: '#08080f',
+    icon: path.join(__dirname, '..', 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true
@@ -32,7 +33,7 @@ ipcMain.handle('save-image', (_event, dataUrl) => {
   const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
   const uint8 = new Uint8Array(Buffer.from(base64, 'base64'))
   console.log(uint8)
-  return uint8
+  return { success: true, uint8: Array.from(uint8) }
 })
 
 app.whenReady().then(() => {
