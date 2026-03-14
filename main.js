@@ -1,6 +1,5 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
-const fs = require('fs')
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -29,20 +28,11 @@ ipcMain.on('window-maximize', (e) => {
 })
 ipcMain.on('window-close', (e) => BrowserWindow.fromWebContents(e.sender).close())
 
-ipcMain.handle('save-image', async (_event, dataUrl) => {
-  const { filePath, canceled } = await dialog.showSaveDialog({
-    title: 'Save Photo',
-    defaultPath: `photo-${Date.now()}.png`,
-    filters: [
-      { name: 'Images', extensions: ['png', 'jpeg', 'jpg'] }
-    ]
-  })
-
-  if (canceled || !filePath) return { success: false }
-
+ipcMain.handle('save-image', (_event, dataUrl) => {
   const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
-  fs.writeFileSync(filePath, Buffer.from(base64, 'base64'))
-  return { success: true, filePath }
+  const uint8 = new Uint8Array(Buffer.from(base64, 'base64'))
+  console.log(uint8)
+  return uint8
 })
 
 app.whenReady().then(() => {
