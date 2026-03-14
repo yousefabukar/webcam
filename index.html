@@ -3,92 +3,415 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Webcam</title>
+  <title>Veritas</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: sans-serif;
-      background: #1a1a1a;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;600;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #08080f;
+      --surface: #0f0f1a;
+      --border:  rgba(255,255,255,0.07);
+      --accent:  #5b6ef5;
+      --accent2: #7c3aed;
+      --text:    #e8e8f0;
+      --muted:   #6b6b85;
+      --danger:  #ef4444;
+      --success: #22c55e;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── Titlebar ─────────────────────────────────────────────── */
+    #titlebar {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px;
+      background: rgba(8,8,15,0.85);
+      backdrop-filter: blur(12px);
+      -webkit-app-region: drag;
+      z-index: 100;
+      border-bottom: 1px solid var(--border);
+    }
+    #titlebar .logo-small {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #5b6ef5, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    #titlebar .controls {
+      display: flex; gap: 8px;
+      -webkit-app-region: no-drag;
+    }
+    .wbtn {
+      width: 12px; height: 12px;
+      border-radius: 50%; border: none; cursor: pointer;
+      transition: filter 0.15s;
+    }
+    .wbtn:hover { filter: brightness(1.4); }
+    .wbtn.close { background: #ef4444; }
+    .wbtn.min   { background: #f59e0b; }
+    .wbtn.max   { background: #22c55e; }
+
+    /* ── Splash ───────────────────────────────────────────────── */
+    #splash {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 52px;
+      background: var(--bg);
+      z-index: 10;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    #splash.hidden {
+      opacity: 0; transform: scale(1.04); pointer-events: none;
+    }
+
+    .ring-wrap {
+      position: relative;
+      width: 100px; height: 100px;
+    }
+    .ring-wrap svg {
+      position: absolute; inset: 0;
+      animation: spin 2.6s linear infinite;
+    }
+    .ring-wrap svg.inner {
+      animation: spin-rev 1.9s linear infinite;
+    }
+    @keyframes spin     { to { transform: rotate(360deg); } }
+    @keyframes spin-rev { to { transform: rotate(-360deg); } }
+
+    .ring-dot {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ring-dot span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #5b6ef5, #a78bfa);
+      box-shadow: 0 0 24px #5b6ef588;
+      animation: pulse 1.9s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1);    box-shadow: 0 0 24px #5b6ef588; }
+      50%       { transform: scale(1.3);  box-shadow: 0 0 40px #5b6ef5bb; }
+    }
+
+    .splash-logo { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+
+    .splash-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 3.4rem;
+      font-weight: 700;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #c7d2fe 10%, #5b6ef5 50%, #a78bfa 90%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: fadeUp 0.9s ease both 0.2s;
+    }
+    .splash-sub {
+      font-size: 0.72rem;
+      font-weight: 400;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--muted);
+      animation: fadeUp 0.9s ease both 0.35s;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .progress-wrap {
+      width: 200px; height: 2px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+      animation: fadeUp 0.9s ease both 0.5s;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #5b6ef5, #a78bfa);
+      border-radius: 99px;
+      animation: load 1.7s cubic-bezier(0.4,0,0.2,1) 0.3s both;
+    }
+    @keyframes load { from { width: 0; } to { width: 100%; } }
+
+    #launch-btn {
+      padding: 14px 52px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      letter-spacing: 0.07em;
       color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px;
-      gap: 16px;
-    }
-    h1 { font-size: 1.4rem; }
-    video {
-      width: 100%;
-      max-width: 720px;
-      border-radius: 8px;
-      background: #000;
-    }
-    canvas { display: none; }
-    #status { font-size: 0.85rem; color: #aaa; min-height: 1.2em; }
-    #status.success { color: #4caf50; }
-    #status.error { color: #f44336; }
-    button {
-      padding: 10px 28px;
-      font-size: 1rem;
+      background: linear-gradient(135deg, #5b6ef5, #7c3aed);
       border: none;
-      border-radius: 6px;
+      border-radius: 99px;
       cursor: pointer;
-      background: #2196f3;
-      color: #fff;
+      box-shadow: 0 0 36px #5b6ef540, 0 2px 10px #0008;
+      transition: transform 0.18s, box-shadow 0.18s;
+      animation: fadeUp 0.9s ease both 0.7s;
+      opacity: 0;
+      pointer-events: none;
     }
-    button:hover { background: #1976d2; }
-    button:disabled { background: #555; cursor: not-allowed; }
+    #launch-btn.ready { opacity: 1; pointer-events: all; }
+    #launch-btn:hover  { transform: translateY(-2px); box-shadow: 0 0 52px #5b6ef560, 0 4px 18px #0008; }
+    #launch-btn:active { transform: translateY(0); }
+
+    /* ── Camera view ──────────────────────────────────────────── */
+    #camera-view {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      background: var(--bg);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.6s ease;
+    }
+    #camera-view.visible { opacity: 1; pointer-events: all; }
+
+    .cam-body {
+      flex: 1;
+      padding: 48px 28px 0;
+      display: flex;
+      align-items: stretch;
+    }
+
+    .video-frame {
+      position: relative;
+      flex: 1;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000;
+      box-shadow: 0 0 0 1px var(--border), 0 32px 80px #00000088;
+    }
+
+    /* Corner accents */
+    .video-frame::before, .video-frame::after,
+    .corner-tr, .corner-bl {
+      content: '';
+      position: absolute; z-index: 2;
+      width: 28px; height: 28px;
+      border-color: var(--accent);
+      border-style: solid;
+      pointer-events: none;
+    }
+    .video-frame::before { top: 14px; left: 14px; border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; }
+    .video-frame::after  { bottom: 14px; right: 14px; border-width: 0 2px 2px 0; border-radius: 0 0 4px 0; }
+    .corner-tr { top: 14px; right: 14px; border-width: 2px 2px 0 0; border-radius: 0 4px 0 0; }
+    .corner-bl { bottom: 14px; left: 14px; border-width: 0 0 2px 2px; border-radius: 0 0 0 4px; }
+
+    video {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .live-badge {
+      position: absolute; top: 18px; left: 50%; transform: translateX(-50%); z-index: 3;
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 12px;
+      background: rgba(8,8,15,0.72);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .live-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--danger);
+      animation: blink 1.2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
+
+    canvas { display: none; }
+
+    /* ── Bottom bar ───────────────────────────────────────────── */
+    .cam-bar {
+      height: 100px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    #capture-btn {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.12);
+      background: #fff;
+      cursor: pointer;
+      position: relative;
+      box-shadow: 0 0 0 7px rgba(255,255,255,0.05), 0 4px 24px #0008;
+      transition: transform 0.15s, box-shadow 0.15s;
+      flex-shrink: 0;
+    }
+    #capture-btn::after {
+      content: '';
+      position: absolute; inset: 7px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #5b6ef5, #a78bfa);
+      transition: transform 0.12s;
+    }
+    #capture-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 0 9px rgba(91,110,245,0.15), 0 6px 28px #0008;
+    }
+    #capture-btn:active::after { transform: scale(0.85); }
+    #capture-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+    /* ── Toast ────────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 112px; left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      padding: 10px 22px;
+      background: rgba(15,15,26,0.94);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.28s, transform 0.28s;
+      z-index: 50;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.success { color: var(--success); border-color: #22c55e33; }
+    #toast.error   { color: var(--danger);  border-color: #ef444433; }
   </style>
 </head>
 <body>
-  <h1>Webcam</h1>
-  <video id="video" autoplay playsinline></video>
-  <canvas id="canvas"></canvas>
-  <button id="capture" disabled>Take Photo</button>
-  <p id="status"></p>
+
+  <div id="titlebar">
+    <span class="logo-small">Veritas</span>
+    <div class="controls">
+      <button class="wbtn min"   onclick="window.electronAPI.minimize()"></button>
+      <button class="wbtn max"   onclick="window.electronAPI.maximize()"></button>
+      <button class="wbtn close" onclick="window.electronAPI.close()"></button>
+    </div>
+  </div>
+
+  <!-- Splash -->
+  <div id="splash">
+    <div class="splash-logo">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="50" r="46" stroke="url(#g1)" stroke-width="1.5" stroke-dasharray="6 11"/>
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#5b6ef5"/>
+              <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.25"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <svg class="inner" viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="50" r="32" stroke="url(#g2)" stroke-width="1" stroke-dasharray="3 9"/>
+          <defs>
+            <linearGradient id="g2" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#a78bfa"/>
+              <stop offset="100%" stop-color="#5b6ef5" stop-opacity="0.2"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="ring-dot"><span></span></div>
+      </div>
+      <div style="text-align:center">
+        <div class="splash-title">Veritas</div>
+        <div class="splash-sub">Visual Verification System</div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:24px">
+      <div class="progress-wrap"><div class="progress-bar"></div></div>
+      <button id="launch-btn">Launch Camera</button>
+    </div>
+  </div>
+
+  <!-- Camera -->
+  <div id="camera-view">
+    <div class="cam-body">
+      <div class="video-frame">
+        <div class="corner-tr"></div>
+        <div class="corner-bl"></div>
+        <div class="live-badge"><span class="live-dot"></span>Live</div>
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+    <div class="cam-bar">
+      <button id="capture-btn" disabled title="Take Photo"></button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
 
   <script>
-    const video = document.getElementById('video')
-    const canvas = document.getElementById('canvas')
-    const captureBtn = document.getElementById('capture')
-    const status = document.getElementById('status')
+    const splash     = document.getElementById('splash')
+    const camView    = document.getElementById('camera-view')
+    const launchBtn  = document.getElementById('launch-btn')
+    const video      = document.getElementById('video')
+    const canvas     = document.getElementById('canvas')
+    const captureBtn = document.getElementById('capture-btn')
+    const toast      = document.getElementById('toast')
+    let toastTimer
 
-    async function startCamera() {
+    function showToast(msg, type = '') {
+      clearTimeout(toastTimer)
+      toast.textContent = msg
+      toast.className = `show ${type}`.trim()
+      toastTimer = setTimeout(() => { toast.className = '' }, 3500)
+    }
+
+    // Show launch button after progress bar completes (~2s)
+    setTimeout(() => launchBtn.classList.add('ready'), 2000)
+
+    launchBtn.addEventListener('click', async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
         video.srcObject = stream
         captureBtn.disabled = false
-        status.textContent = 'Camera ready.'
-        status.className = ''
+        splash.classList.add('hidden')
+        setTimeout(() => {
+          splash.style.display = 'none'
+          camView.classList.add('visible')
+        }, 650)
       } catch (err) {
-        status.textContent = `Camera error: ${err.message}`
-        status.className = 'error'
-      }
-    }
-
-    captureBtn.addEventListener('click', async () => {
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-      canvas.getContext('2d').drawImage(video, 0, 0)
-
-      const dataUrl = canvas.toDataURL('image/png')
-      captureBtn.disabled = true
-      status.textContent = 'Saving…'
-      status.className = ''
-
-      const result = await window.electronAPI.saveImage(dataUrl)
-      captureBtn.disabled = false
-
-      if (result.success) {
-        status.textContent = `Saved to ${result.filePath}`
-        status.className = 'success'
-      } else {
-        status.textContent = 'Save cancelled.'
-        status.className = ''
+        showToast(`Camera error: ${err.message}`, 'error')
       }
     })
 
-    startCamera()
+    captureBtn.addEventListener('click', async () => {
+      canvas.width  = video.videoWidth
+      canvas.height = video.videoHeight
+      canvas.getContext('2d').drawImage(video, 0, 0)
+
+      captureBtn.disabled = true
+      showToast('Saving…')
+
+      const result = await window.electronAPI.saveImage(canvas.toDataURL('image/png'))
+      captureBtn.disabled = false
+
+      if (result.success) {
+        showToast(`Saved — ${result.filePath.split(/[\\/]/).pop()}`, 'success')
+      } else {
+        showToast('Save cancelled.')
+      }
+    })
   </script>
 </body>
 </html>

@@ -4,16 +4,30 @@ const fs = require('fs')
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 900,
-    height: 700,
+    width: 1280,
+    height: 800,
+    minWidth: 640,
+    minHeight: 480,
+    frame: false,
+    backgroundColor: '#08080f',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true
     }
   })
 
+  win.maximize()
   win.loadFile('index.html')
 }
+
+
+
+ipcMain.on('window-minimize', (e) => BrowserWindow.fromWebContents(e.sender).minimize())
+ipcMain.on('window-maximize', (e) => {
+  const win = BrowserWindow.fromWebContents(e.sender)
+  win.isMaximized() ? win.unmaximize() : win.maximize()
+})
+ipcMain.on('window-close', (e) => BrowserWindow.fromWebContents(e.sender).close())
 
 ipcMain.handle('save-image', async (_event, dataUrl) => {
   const { filePath, canceled } = await dialog.showSaveDialog({
