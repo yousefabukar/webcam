@@ -244,8 +244,12 @@
 
     /* ── Bottom bar ───────────────────────────────────────────── */
     .cam-bar {
-      height: 100px;
+      height: 110px;
       display: flex; align-items: center; justify-content: center;
+    }
+
+    .capture-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
     }
 
     #capture-btn {
@@ -255,11 +259,18 @@
       background: #fff;
       cursor: pointer;
       position: relative;
+      display: flex; align-items: center; justify-content: center;
       box-shadow: 0 0 0 7px rgba(255,255,255,0.05), 0 4px 24px #0008;
       transition: transform 0.15s, box-shadow 0.15s;
       flex-shrink: 0;
     }
-    #capture-btn::after {
+    #capture-btn .cam-icon {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1;
+    }
+    #capture-btn .cam-icon svg { width: 26px; height: 26px; }
+    #capture-btn::before {
       content: '';
       position: absolute; inset: 7px;
       border-radius: 50%;
@@ -270,8 +281,16 @@
       transform: scale(1.1);
       box-shadow: 0 0 0 9px rgba(91,110,245,0.15), 0 6px 28px #0008;
     }
-    #capture-btn:active::after { transform: scale(0.85); }
+    #capture-btn:active::before { transform: scale(0.85); }
     #capture-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+    .capture-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
 
     /* ── Toast ────────────────────────────────────────────────── */
     #toast {
@@ -354,7 +373,17 @@
       </div>
     </div>
     <div class="cam-bar">
-      <button id="capture-btn" disabled title="Take Photo"></button>
+      <div class="capture-wrap">
+        <button id="capture-btn" disabled title="Take Photo">
+          <span class="cam-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="12" cy="13" r="4" stroke="#fff" stroke-width="1.8"/>
+            </svg>
+          </span>
+        </button>
+        <span class="capture-label">Take Photo</span>
+      </div>
     </div>
   </div>
 
