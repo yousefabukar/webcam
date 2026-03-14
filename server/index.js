@@ -1,6 +1,9 @@
 const express = require('express')
 const multer = require('multer')
 const sharp = require('sharp')
+const fs = require('fs')
+const path = require('path')
+const os = require('os')
 
 const app = express()
 const upload = multer({ storage: multer.memoryStorage() })
@@ -16,10 +19,11 @@ app.post('/pixels', upload.single('image'), async (req, res) => {
   }
 
   try {
-    const { data, info } = await sharp(req.file.buffer)
-      .removeAlpha()     
-      .raw()              
-      .toBuffer({ resolveWithObject: true })
+    const tmpPath = path.join(os.tmpdir(), `veritas_${Date.now()}.jpg`)
+    fs.writeFileSync(tmpPath, req.file.buffer)
+    console.log(`Image saved to: ${tmpPath}`)
+
+    const { data, info } = await sharp(req.file.buffer).removeAlpha().raw().toBuffer({ resolveWithObject: true })
 
     const pixels = Array.from(new Uint8Array(data))
 

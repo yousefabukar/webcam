@@ -28,11 +28,23 @@ ipcMain.on('window-maximize', (e) => {
 })
 ipcMain.on('window-close', (e) => BrowserWindow.fromWebContents(e.sender).close())
 
-ipcMain.handle('save-image', (_event, dataUrl) => {
-  const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
-  const uint8 = new Uint8Array(Buffer.from(base64, 'base64'))
-  console.log(uint8)
-  return uint8
+ipcMain.handle('save-image', async (_event, dataUrl) => {
+  try {
+    const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
+    const imageBuffer = Buffer.from(base64, 'base64')
+
+    const FormData = require('form-data')
+    const fetch = require('node-fetch')
+
+    const form = new FormData()
+    form.append('image', imageBuffer, { filename: 'capture.jpg', contentType: 'image/jpeg' })
+
+    const res = await (await fetch('http://localhost:3001/pixels', { method: 'POST', body: form, headers: form.getHeaders() })).json()
+    return { success: true, ...res }
+  } catch (err) {
+    console.error('save-image error:', err)
+    return { success: false, error: err.message }
+  }
 })
 
 app.whenReady().then(() => {
