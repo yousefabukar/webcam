@@ -431,15 +431,15 @@
       canvas.getContext('2d').drawImage(video, 0, 0)
 
       captureBtn.disabled = true
-      showToast('Saving…')
+      showToast('Processing…')
 
-      const result = await window.electronAPI.saveImage(canvas.toDataURL('image/png'))
+      const result = await window.electronAPI.saveImage(canvas.toDataURL('image/jpeg', 0.92))
       captureBtn.disabled = false
 
       if (result.success) {
-        showToast(`Saved — ${result.filePath.split(/[\\/]/).pop()}`, 'success')
+        showToast('Bytes logged to terminal', 'success')
       } else {
-        showToast('Save cancelled.')
+        showToast('Failed to process image.', 'error')
       }
     })
   </script>
