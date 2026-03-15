@@ -251,17 +251,21 @@
 
     canvas { display: none; }
 
-    /* ── Floating capture button ──────────────────────────────── */
+    /* ── Floating capture buttons ─────────────────────────────── */
     .capture-wrap {
       position: absolute;
       bottom: 28px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 10;
+      display: flex; flex-direction: row; align-items: flex-end; gap: 32px;
+    }
+
+    .btn-group {
       display: flex; flex-direction: column; align-items: center; gap: 8px;
     }
 
-    #capture-btn {
+    #capture-btn, #record-btn {
       width: 72px; height: 72px;
       border-radius: 50%;
       border: 3px solid rgba(255,255,255,0.18);
@@ -273,16 +277,26 @@
       box-shadow:
         0 0 0 6px rgba(91,110,245,0.15),
         0 8px 32px rgba(0,0,0,0.6);
-      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s, border-color 0.15s;
     }
-    #capture-btn svg { position: relative; z-index: 1; width: 30px; height: 30px; }
-    #capture-btn:hover {
+    #capture-btn svg, #record-btn svg { position: relative; z-index: 1; width: 30px; height: 30px; }
+    #capture-btn:hover, #record-btn:hover {
       transform: scale(1.1);
       background: rgba(91,110,245,0.25);
       box-shadow: 0 0 0 8px rgba(91,110,245,0.2), 0 10px 40px rgba(0,0,0,0.7);
     }
-    #capture-btn:active { transform: scale(0.95); }
-    #capture-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+    #capture-btn:active, #record-btn:active { transform: scale(0.95); }
+    #capture-btn:disabled, #record-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+    #record-btn.recording {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 6px rgba(239,68,68,0.2), 0 8px 32px rgba(0,0,0,0.6);
+      animation: rec-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes rec-pulse {
+      0%, 100% { box-shadow: 0 0 0 6px rgba(239,68,68,0.2), 0 8px 32px rgba(0,0,0,0.6); }
+      50%       { box-shadow: 0 0 0 10px rgba(239,68,68,0.35), 0 8px 32px rgba(0,0,0,0.6); }
+    }
 
     .capture-label {
       font-size: 0.68rem;
@@ -372,18 +386,33 @@
         <div class="corner-br"></div>
         <div class="video-inner">
           <div class="live-badge"><span class="live-dot"></span>Live</div>
-          <video id="video" autoplay playsinline></video>
+          <video id="video" autoplay playsinline muted></video>
           <canvas id="canvas"></canvas>
         </div>
       </div>
       <div class="capture-wrap">
-        <button id="capture-btn" disabled title="Take Photo">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="12" cy="13" r="4" stroke="#fff" stroke-width="1.8"/>
-          </svg>
-        </button>
-        <span class="capture-label">Take Photo</span>
+        <div class="btn-group">
+          <button id="capture-btn" disabled title="Take Photo">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="12" cy="13" r="4" stroke="#fff" stroke-width="1.8"/>
+            </svg>
+          </button>
+          <span class="capture-label">Take Photo</span>
+        </div>
+        <div class="btn-group">
+          <button id="record-btn" disabled title="Record Video">
+            <!-- record icon -->
+            <svg id="record-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="7" fill="#ef4444"/>
+            </svg>
+            <!-- stop icon (hidden by default) -->
+            <svg id="stop-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none">
+              <rect x="6" y="6" width="12" height="12" rx="2" fill="#fff"/>
+            </svg>
+          </button>
+          <span class="capture-label" id="record-label">Record</span>
+        </div>
       </div>
     </div>
   </div>
@@ -391,14 +420,20 @@
   <div id="toast"></div>
 
   <script>
-    const splash     = document.getElementById('splash')
-    const camView    = document.getElementById('camera-view')
-    const launchBtn  = document.getElementById('launch-btn')
-    const video      = document.getElementById('video')
-    const canvas     = document.getElementById('canvas')
-    const captureBtn = document.getElementById('capture-btn')
-    const toast      = document.getElementById('toast')
+    const splash      = document.getElementById('splash')
+    const camView     = document.getElementById('camera-view')
+    const launchBtn   = document.getElementById('launch-btn')
+    const video       = document.getElementById('video')
+    const canvas      = document.getElementById('canvas')
+    const captureBtn  = document.getElementById('capture-btn')
+    const recordBtn   = document.getElementById('record-btn')
+    const recordLabel = document.getElementById('record-label')
+    const recordIcon  = document.getElementById('record-icon')
+    const stopIcon    = document.getElementById('stop-icon')
+    const toast       = document.getElementById('toast')
     let toastTimer
+    let mediaRecorder = null
+    let recordedChunks = []
 
     function showToast(msg, type = '') {
       clearTimeout(toastTimer)
@@ -412,9 +447,10 @@
 
     launchBtn.addEventListener('click', async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
         video.srcObject = stream
         captureBtn.disabled = false
+        recordBtn.disabled = false
         splash.classList.add('hidden')
         setTimeout(() => {
           splash.style.display = 'none'
@@ -437,9 +473,52 @@
       captureBtn.disabled = false
 
       if (result.success) {
-        showToast('Bytes logged to terminal', 'success')
+        showToast('Image saved — path in terminal', 'success')
       } else {
         showToast('Failed to process image.', 'error')
+      }
+    })
+
+    recordBtn.addEventListener('click', () => {
+      if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+        // Start recording
+        recordedChunks = []
+        const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+          ? 'video/webm;codecs=vp9'
+          : 'video/webm'
+        mediaRecorder = new MediaRecorder(video.srcObject, { mimeType })
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data) }
+        mediaRecorder.onstop = async () => {
+          showToast('Converting to MP4…')
+          recordBtn.disabled = true
+
+          const blob = new Blob(recordedChunks, { type: 'video/webm' })
+          const reader = new FileReader()
+          reader.onloadend = async () => {
+            const base64 = reader.result.split(',')[1]
+            const result = await window.electronAPI.saveVideo(base64)
+            recordBtn.disabled = false
+            if (result.success) {
+              showToast('Video saved — path in terminal', 'success')
+            } else {
+              showToast(`Failed to save video: ${result.error}`, 'error')
+            }
+          }
+          reader.readAsDataURL(blob)
+        }
+        mediaRecorder.start()
+
+        recordBtn.classList.add('recording')
+        recordIcon.style.display = 'none'
+        stopIcon.style.display = ''
+        recordLabel.textContent = 'Stop'
+      } else {
+        // Stop recording
+        mediaRecorder.stop()
+        recordBtn.classList.remove('recording')
+        recordIcon.style.display = ''
+        stopIcon.style.display = 'none'
+        recordLabel.textContent = 'Record'
       }
     })
   </script>
