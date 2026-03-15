@@ -8,6 +8,10 @@ const ffmpeg = require('fluent-ffmpeg')
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg')
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 
+const veritas = require('../../veritas-core/bindings')
+const DUMMY_KEY_PATH = '/tmp/dummy.key'
+const DOWNLOADS_DIR = path.join(os.homedir(), 'Downloads')
+
 const app = express()
 const upload = multer({ storage: multer.memoryStorage() })
 
@@ -22,9 +26,17 @@ app.post('/pixels', upload.single('image'), async (req, res) => {
   }
 
   try {
-    const tmpPath = path.join(os.tmpdir(), `veritas_${Date.now()}.jpg`)
+    const ts = Date.now()
+    const tmpPath = path.join(os.tmpdir(), `veritas_${ts}.jpg`)
     fs.writeFileSync(tmpPath, req.file.buffer)
     console.log(`Image saved to: ${tmpPath}`)
+
+    const pkInfo = veritas.keyread(DUMMY_KEY_PATH)
+    console.log(`Key read: key_id=${pkInfo.key_id}`)
+
+    const signedPath = path.join(DOWNLOADS_DIR, `veritas_signed_${ts}.jpg`)
+    veritas.sign(tmpPath, pkInfo.key_id, signedPath)
+    console.log(`Signed image saved to: ${signedPath}`)
 
     const { data, info } = await sharp(req.file.buffer).removeAlpha().raw().toBuffer({ resolveWithObject: true })
 
@@ -34,7 +46,8 @@ app.post('/pixels', upload.single('image'), async (req, res) => {
       width: info.width,
       height: info.height,
       channels: info.channels,
-      pixels
+      pixels,
+      signedPath
     })
   } catch (err) {
     res.status(422).json({ error: `Failed to process image: ${err.message}` })
