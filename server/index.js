@@ -8,7 +8,7 @@ const ffmpeg = require('fluent-ffmpeg')
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg')
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 
-const veritas = require('../../veritas-core/bindings')
+const veritas = require('../../veritas-core/bindings/core')
 const DUMMY_KEY_PATH = '/tmp/dummy.key'
 const DOWNLOADS_DIR = path.join(os.homedir(), 'Downloads')
 
