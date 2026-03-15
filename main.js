@@ -47,6 +47,23 @@ ipcMain.handle('save-image', async (_event, dataUrl) => {
   }
 })
 
+ipcMain.handle('save-video', async (_event, base64) => {
+  try {
+    const videoBuffer = Buffer.from(base64, 'base64')
+    const FormData = require('form-data')
+    const fetch = require('node-fetch')
+
+    const form = new FormData()
+    form.append('video', videoBuffer, { filename: 'capture.webm', contentType: 'video/webm' })
+
+    const res = await (await fetch('http://localhost:3001/video', { method: 'POST', body: form, headers: form.getHeaders() })).json()
+    return { success: true, ...res }
+  } catch (err) {
+    console.error('save-video error:', err)
+    return { success: false, error: err.message }
+  }
+})
+
 app.whenReady().then(() => {
   createWindow()
 

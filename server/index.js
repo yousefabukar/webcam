@@ -4,6 +4,9 @@ const sharp = require('sharp')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
+const ffmpeg = require('fluent-ffmpeg')
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg')
+ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 
 const app = express()
 const upload = multer({ storage: multer.memoryStorage() })
@@ -35,6 +38,40 @@ app.post('/pixels', upload.single('image'), async (req, res) => {
     })
   } catch (err) {
     res.status(422).json({ error: `Failed to process image: ${err.message}` })
+  }
+})
+
+// POST /video
+// Accepts a WebM video as multipart form-data field "video".
+// Converts to MP4, saves to temp dir, and returns the file path.
+app.post('/video', upload.single('video'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No video file provided. Send a WebM as form-data field "video".' })
+  }
+
+  const ts = Date.now()
+  const webmPath = path.join(os.tmpdir(), `veritas_${ts}.webm`)
+  const mp4Path  = path.join(os.tmpdir(), `veritas_${ts}.mp4`)
+
+  try {
+    fs.writeFileSync(webmPath, req.file.buffer)
+
+    await new Promise((resolve, reject) => {
+      ffmpeg(webmPath)
+        .videoCodec('libx264')
+        .audioCodec('aac')
+        .output(mp4Path)
+        .on('end', resolve)
+        .on('error', reject)
+        .run()
+    })
+
+    fs.unlinkSync(webmPath)
+    console.log(`Video saved to: ${mp4Path}`)
+    res.json({ path: mp4Path })
+  } catch (err) {
+    try { fs.unlinkSync(webmPath) } catch (_) {}
+    res.status(422).json({ error: `Failed to process video: ${err.message}` })
   }
 })
 
